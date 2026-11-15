@@ -8,6 +8,12 @@
 | Danish Faeyza | 5027251028 |
 | Naoval James O. | 5027251092 |
 
+Pembagian Tugas :
+- Perancangan Topologi : dikerjakan bersama.
+- Perhitungan dan Tabel Subnetting VLSM & CIDR, Static Routing : Aura Syahzanani A.
+- DHCP & NAT : Danish Faeyza
+- Tunnel GRE, Dynamic Routing OSPF, Layanan aplikasi smart city : Naoval James O.
+
 ---
 
 ## 1. Topologi dan Pemilihan Skema
