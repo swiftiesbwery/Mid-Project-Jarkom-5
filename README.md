@@ -156,8 +156,6 @@ VLSM lebih efisien dengan selisih 70,67 poin persen. CIDR mengimbangi dengan rou
 
 ## 4. Penjelasan Konfigurasi
 
-> Salin potongan konfigurasi utama. Konfigurasi lengkap per router ada di folder [`config/`](config/).
-
 ### 4.1 Static routing
 
 Skema VLSM tidak punya route summarization, sehingga setiap LAN harus didaftarkan satu per satu. Pola routingnya:
