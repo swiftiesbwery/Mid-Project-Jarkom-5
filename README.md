@@ -33,14 +33,13 @@ Backbone mengikuti Gambar 1 (L1-L6). Desain tiap lokasi:
 
 | Lokasi | Switch | Perangkat | Media | Tambahan port router | Alasan |
 |---|---|---|---|---|---|
-| Balai Kota | `TODO` | `TODO` | `TODO` | `TODO` | `TODO` |
-| Command Center (DC) | `TODO` | `TODO` | `TODO` | `TODO` | `TODO` |
-| Surabaya Barat | `TODO` | `TODO` | `TODO` | `TODO` | `TODO` |
-| Surabaya Utara | `TODO` | `TODO` | `TODO` | `TODO` | `TODO` |
-| Surabaya Timur | `TODO` | `TODO` | `TODO` | `TODO` | `TODO` |
-| Surabaya Selatan | `TODO` | `TODO` | `TODO` | `TODO` | `TODO` |
-| Pelabuhan | `TODO` | `TODO` | `TODO` | `TODO` | `TODO` |
-
+| Balai Kota | 2× Cisco 2960-24TT: `SW-PEGAWAI-BALAIKOTA`, `SW-SERVER-BALAIKOTA` | Router `R-PUSAT` (2911), `PEGAWAI-BALAIKOTA` (PC), `SRV-BALAIKOTA` (server) | UTP straight-through Gi0/1 dan Gi0/2 ke switch; UTP cross-over Gi0/0 ke `R-ISP`; 5 kabel serial (L1–L5) | 3× HWIC-2T (Se0/0/0–Se0/2/1, 6 port serial, 5 terpakai) | Pusat backbone: 5 link serial (L1–L5) ke DC, Utara, Selatan, Timur, Barat. 2911 hanya punya 3 port Gi bawaan (ISP, LAN Pegawai /21, LAN Server /27), jadi butuh 3 HWIC-2T. |
+| Command Center (DC) | 2× 2960-24TT: `SW-CCTV-KOTA`, `SW-SERVER-DC` | Router `R-DC` (2911), `NVR-CCTV-KOTA` (PC), `SRV-DC` (server) | UTP straight-through Gi0/0 dan Gi0/1 ke switch; 1 kabel serial (L1) | 1× HWIC-2T (Se0/0/0 terpakai, Se0/0/1 cadangan) | Hanya 1 link backbone (L1). LAN CCTV /19 dan LAN Server-Storage /24 memakai Gi0/0 dan Gi0/1 bawaan, jadi cukup 1 HWIC-2T. |
+| Surabaya Barat | 2× 2960-24TT: `SW-WIFI-BARAT`, `SW-PUSKESMAS-BARAT` | Router `R-BARAT` (2911), `AP-WIFI-BARAT`, `HP-WIFI-BARAT` (smartphone, via WiFi), `PUSKESMAS-BARAT` (PC) | UTP straight-through Gi0/0 dan Gi0/1 ke switch, switch ke AP/PC; 1 kabel serial (L5); WiFi untuk HP | 1× HWIC-2T (Se0/0/0 terpakai, Se0/0/1 cadangan) | Hanya 1 link backbone (L5). Dua LAN (WiFi Publik /19, Puskesmas-Sekolah /24) memakai Gi0/0 dan Gi0/1 bawaan. |
+| Surabaya Utara | 2× 2960-24TT: `SW-WIFI-UTARA`, `SW-SENSOR-LALIN-UTARA` | Router `R-UTARA` (2911), `AP-WIFI-UTARA`, `HP-WIFI-UTARA` (smartphone, via WiFi), `SENSOR-LALIN-UTARA` (PC) | UTP straight-through Gi0/0 dan Gi0/1 ke switch, switch ke AP/PC; 2 kabel serial (L2 ke Pusat, L6 ke Pelabuhan); WiFi untuk HP | 1× HWIC-2T dipakai penuh (Se0/0/0 dan Se0/0/1). Di file ada 2× HWIC-2T, modul kedua (Se0/1/0, Se0/1/1) tidak terpakai | Utara jadi titik transit: L2 ke Pusat dan L6 ke Pelabuhan, jadi butuh 2 port serial. Satu HWIC-2T sudah cukup; modul kedua di file tidak diperlukan. |
+| Surabaya Timur | 2× 2960-24TT: `SW-WIFI-TIMUR`, `SW-SENSOR-BANJIR-TIMUR` | Router `R-TIMUR` (2911), `AP-WIFI-TIMUR`, `HP-WIFI-TIMUR` (smartphone, via WiFi), `SENSOR-BANJIR-TIMUR` (PC) | UTP straight-through Gi0/0 dan Gi0/1 ke switch, switch ke AP/PC; 1 kabel serial (L4); WiFi untuk HP | 1× HWIC-2T (Se0/0/0 terpakai, Se0/0/1 cadangan) | Hanya 1 link backbone (L4). LAN WiFi Publik /19 dan Sensor Banjir /22 memakai Gi bawaan. |
+| Surabaya Selatan | 2× 2960-24TT: `SW-WIFI-SELATAN`, `SW-PJU-SELATAN` | Router `R-SELATAN` (2911), `AP-WIFI-SELATAN`, `HP-WIFI-SELATAN` (smartphone, via WiFi), `SENSOR-PJU-SELATAN` (PC) | UTP straight-through Gi0/0 dan Gi0/1 ke switch, switch ke AP/PC; 1 kabel serial (L3); WiFi untuk HP | 1× HWIC-2T (Se0/0/0 terpakai, Se0/0/1 cadangan) | Hanya 1 link backbone (L3). LAN WiFi Publik /19 dan PJU Pintar /25 memakai Gi bawaan. |
+| Pelabuhan | 2× 2960-24TT: `SW-SCADA-PELABUHAN`, `SW-KANTOR-PELABUHAN` | Router `R-PELABUHAN` (2911), `SENSOR-SCADA-PELABUHAN` (PC), `KANTOR-PELABUHAN` (PC) | UTP straight-through Gi0/0 dan Gi0/1 ke switch, switch ke PC; 1 kabel serial (L6 ke `R-UTARA`) | 1× HWIC-2T (Se0/0/0 terpakai, Se0/0/1 cadangan) | Terhubung ke backbone lewat Utara (L6). LAN SCADA /19 dan Kantor /25 memakai Gi bawaan. Di file juga ada GRE tunnel (192.168.5.0/30) ke `R-PUSAT`. |
 Penamaan perangkat: `R-PUSAT`, `SW-BALAIKOTA`, `PC-CCTV-KOTA`, dst. Setiap LAN diberi label berisi nama subnet, Network ID/prefix, dan jumlah host.
 
 ## 3. Tabel Subnetting
