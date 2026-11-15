@@ -33,6 +33,8 @@ Alasan:
 - Alamat dasar kelompok: **10.40.0.0/13** (oktet ke-2 = 8 x 5).
 - Alamat tambahan: link R-PUSAT ke R-ISP `203.0.113.20/30`, server internet `8.8.8.0/24`, tunnel GRE `192.168.5.0/30`.
 
+![Topologi per LAN](images/01-topologi-berlingkar.png)
+
 ## 2. Penjelasan Desain Topologi
 
 Backbone mengikuti Gambar 1 (L1-L6). Desain tiap lokasi:
@@ -48,7 +50,9 @@ Backbone mengikuti Gambar 1 (L1-L6). Desain tiap lokasi:
 | Pelabuhan | 2× 2960-24TT: `SW-SCADA-PELABUHAN`, `SW-KANTOR-PELABUHAN` | Router `R-PELABUHAN` (2911), `SENSOR-SCADA-PELABUHAN` (PC), `KANTOR-PELABUHAN` (PC) | UTP straight-through Gi0/0 dan Gi0/1 ke switch, switch ke PC; 1 kabel serial (L6 ke `R-UTARA`) | 1× HWIC-2T (Se0/0/0 terpakai, Se0/0/1 cadangan) | Terhubung ke backbone lewat Utara (L6). LAN SCADA /19 dan Kantor /25 memakai Gi bawaan. Di file juga ada GRE tunnel (192.168.5.0/30) ke `R-PUSAT`. |
 
 
-Penamaan perangkat: `R-PUSAT`, `SW-BALAIKOTA`, `PC-CCTV-KOTA`, dst. Setiap LAN diberi label berisi nama subnet, Network ID/prefix, dan jumlah host.
+Penamaan perangkat mengikuti pola `jenis-fungsi-lokasi`: router `R-<LOKASI>` (misalnya `R-PUSAT`), switch `SW-<LAN>` (misalnya `SW-PEGAWAI-BALAIKOTA`, `SW-CCTV-KOTA`), access point `AP-WIFI-<LOKASI>`, dan perangkat akhir sesuai fungsinya (`PEGAWAI-BALAIKOTA`, `NVR-CCTV-KOTA`, `SENSOR-PJU-SELATAN`, `HP-WIFI-TIMUR`, `SRV-DC`). Setiap LAN diberi label berisi nama subnet, Network ID/prefix, dan jumlah host (contoh: "Pegawai Balai Kota / 10.40.224.0/21 / 1800 host"). Setiap link backbone juga diberi label nomor link dan subnetnya, misalnya "L1 (10.40.241.32/30)".
+
+Satu perangkat perwakilan dipasang di setiap LAN (sesuai soal), sedangkan ukuran subnet tetap dihitung dari jumlah host penuh. Sensor IoT diwakili PC karena yang diuji adalah konektivitas IP (DHCP, ping, FTP), bukan fungsi sensornya. LAN WiFi Publik memakai access point dengan SSID per wilayah dan smartphone sebagai klien, supaya media wireless ikut teruji.
 
 ## 3. Tabel Subnetting
 
@@ -297,7 +301,6 @@ Tunnel `192.168.5.0/30` menghubungkan `R-PUSAT` (`.1`) langsung ke `R-PELABUHAN`
 ! R-PUSAT
 interface Tunnel0
  ip address 192.168.5.1 255.255.255.252
- mtu 1476
  tunnel source Serial0/1/0
  tunnel destination 10.40.241.54
 ip route 10.40.160.0 255.255.224.0 192.168.5.2
@@ -306,14 +309,15 @@ ip route 10.40.240.0 255.255.255.128 192.168.5.2
 ! R-PELABUHAN
 interface Tunnel0
  ip address 192.168.5.2 255.255.255.252
- mtu 1476
  tunnel source Serial0/0/0
  tunnel destination 10.40.241.37
 ip route 10.40.224.0 255.255.248.0 192.168.5.1
 ip route 10.40.241.0 255.255.255.224 192.168.5.1
 ```
 
-**Alasan router memilih tunnel.** Static route menuju LAN Pelabuhan (di R-PUSAT) dan LAN Balai Kota (di R-PELABUHAN) menunjuk next hop alamat tunnel (`192.168.5.x`), bukan alamat L2/L6. Jadi kedua router mengirim paket ke LAN tersebut lewat `Tunnel0`, dan R-UTARA hanya meneruskan paket GRE yang sudah dibungkus. Setelah OSPF aktif, prefix yang sama sebenarnya juga dipelajari lewat R-UTARA, tetapi static route punya administrative distance 1 sedangkan OSPF 110, sehingga route tunnel tetap yang dipilih. `MTU 1476` dipakai karena header GRE menambah 24 byte (20 byte IP dan 4 byte GRE) pada MTU 1500.
+**Alasan router memilih tunnel.** Static route menuju LAN Pelabuhan (di R-PUSAT) dan LAN Balai Kota (di R-PELABUHAN) menunjuk next hop alamat tunnel (`192.168.5.x`), bukan alamat L2/L6. Jadi kedua router mengirim paket ke LAN tersebut lewat `Tunnel0`, dan R-UTARA hanya meneruskan paket GRE yang sudah dibungkus. Setelah OSPF aktif, prefix yang sama sebenarnya juga dipelajari lewat R-UTARA, tetapi static route punya administrative distance 1 sedangkan OSPF 110, sehingga route tunnel tetap yang dipilih. `show interfaces tunnel0` menampilkan `Tunnel transport MTU 1476 bytes`, karena header GRE menambah 24 byte (20 byte IP dan 4 byte GRE) pada MTU 1500.
+
+Hasil `show interfaces tunnel0` di kedua sisi: `Tunnel0 is up, line protocol is up`, `Tunnel protocol/transport GRE/IP`, R-PUSAT `source 10.40.241.37, destination 10.40.241.54` dan R-PELABUHAN `source 10.40.241.54, destination 10.40.241.37`.
 
 **Kenapa GRE tidak mengenkripsi.** GRE hanya melakukan encapsulation: paket asli dibungkus header IP baru (protokol 47) agar bisa dikirim lewat jaringan di antaranya. Isi paket tetap berupa teks biasa, sehingga R-UTARA atau siapa pun di jalur itu bisa membacanya. GRE juga tidak punya autentikasi atau pengecekan integritas.
 
@@ -369,7 +373,24 @@ router ospf 1
 - Di R-PUSAT, `Gi0/0` ke ISP tidak perlu passive karena alamatnya `203.0.113.21` berada di luar `10.40.0.0/16` dan tidak masuk statement `network`.
 - Static route R-PUSAT dan R-PELABUHAN lewat tunnel dibiarkan (lihat 4.4).
 
-**Uji failover:** (1) pastikan `ping` dan `tracert` dari PC CCTV ke Balai Kota lewat L1, dan `show ip route ospf` di R-DC menampilkan route ke R-PUSAT; (2) matikan Se0/0/0 R-DC (`shutdown`) untuk memutus L1; (3) tunggu OSPF konvergen, lalu ulangi `ping` dan `tracert`, yang sekarang harus lewat R-UTARA; (4) nyalakan kembali Se0/0/0 dan pastikan jalur kembali ke L1.
+**Verifikasi OSPF (di R-DC):**
+
+- `show ip ospf neighbor` di R-PUSAT: 5 tetangga (2.2.2.2 sampai 6.6.6.6) berstatus `FULL`.
+- `show ip route ospf`: 12 LAN wilayah lain berkode `O` dan `O*E2 0.0.0.0/0 via 10.40.241.33`. LAN Utara dan Pelabuhan lewat L7 (`via 10.40.241.58`) karena lebih dekat, LAN lain lewat L1 (`via 10.40.241.33`).
+- `show ip route static`: kosong (static route antar-router sudah diganti OSPF).
+- `show ip protocols`: `Router ID 2.2.2.2`, `Passive Interface(s): GigabitEthernet0/0, GigabitEthernet0/1`.
+
+**Uji failover (link utama L1 diputus):**
+
+| Tahap | Perintah | Hasil |
+|---|---|---|
+| Sebelum | `tracert 8.8.8.8` dari NVR-CCTV-KOTA | 10.40.96.1 → **10.40.241.33** (R-PUSAT lewat L1) → 203.0.113.22 → 8.8.8.8 |
+| Putus | `ping -t 8.8.8.8` di NVR, lalu `shutdown` Se0/0/0 R-DC | `Reply ... TTL=125`, lalu **1× `Request timed out`**, lalu `Reply ... TTL=124` |
+| Sesudah | `tracert 8.8.8.8` dari NVR | 10.40.96.1 → **10.40.241.58** (R-UTARA lewat L7) → **10.40.241.37** (R-PUSAT lewat L2) → 203.0.113.22 → 8.8.8.8 |
+| Sesudah | `ping 10.40.241.10` dari NVR | Lost = 0 |
+| Pulih | `no shutdown` Se0/0/0 R-DC | `Nbr 1.1.1.1 ... LOADING to FULL` |
+
+TTL turun dari 125 ke 124 karena paket melewati satu router tambahan (R-UTARA). Konektivitas pulih otomatis tanpa konfigurasi ulang.
 
 ### 4.6 Layanan Smart City (domain `k5.smartcity.lab`)
 
@@ -395,12 +416,77 @@ Pengaturan email klien: `PEGAWAI-BALAIKOTA` memakai `pegawai@k5.smartcity.lab` d
 
 ## 5. Bukti Pengujian
 
-| Soal | Pengujian | Screenshot |
-|---|---|---|
-| 1 | Topologi, nama, label LAN | `![](images/01-topologi.png)` |
-| 3 | `ping` antar LAN, `show ip route` | `![](images/03-routing.png)` |
-| 4 | DHCP lease di tiap PC, CCTV dari Server DC | `![](images/04-dhcp.png)` |
-| 5 | `ping 8.8.8.8`, `show ip nat translations` | `![](images/05-nat.png)` |
-| 6 | `tracert` Balai Kota ke Pelabuhan lewat tunnel | `![](images/06-gre.png)` |
-| 7 | `show ip route ospf`, uji link putus | `![](images/07-ospf.png)` |
-| 8 | DNS, Web, FTP, Email | `![](images/08-layanan.png)` |
+Semua pengujian dijalankan di Packet Tracer 9.0.1 pada `K5_VLSM.pkt` (soal 1–6, 8) dan `K5_VLSM_OSPF.pkt` (soal 7).
+
+| Soal | Perangkat sumber → tujuan | Perintah | Hasil |
+|---|---|---|---|
+| 1 | Topologi | Tampilan Logical | Backbone L1–L6, R-ISP, SRV-INTERNET sesuai Gambar 1; nama perangkat dan 14 label LAN lengkap |
+| 3 | R-PUSAT | `show ip route static` | 13 route `S` ke LAN di bawahnya + `S* 0.0.0.0/0 via 203.0.113.22` |
+| 3 | R-UTARA | `show ip route static` | `10.40.160.0/19` dan `10.40.240.0/25 via 10.40.241.54`, `S* via 10.40.241.37` |
+| 3 | R-DC / R-PELABUHAN | `show ip route static` | `S* via 10.40.241.33` / `S* via 10.40.241.53` |
+| 3 | PEGAWAI-BALAIKOTA → SENSOR-SCADA-PELABUHAN, SENSOR-PJU-SELATAN | `ping 10.40.160.11`, `ping 10.40.240.139` | Reply (paket pertama RTO karena ARP) |
+| 4 | PEGAWAI-BALAIKOTA | `ipconfig /renew`, `ipconfig /all` | IP 10.40.224.11, gateway 10.40.224.1, DNS 10.40.239.10, DHCP server 10.40.224.1 |
+| 4 | NVR-CCTV-KOTA | `ipconfig /renew`, `ipconfig /all` | IP 10.40.96.11, gateway 10.40.96.1, DNS 10.40.239.10, **DHCP server 10.40.239.10 (SRV-DC)** |
+| 4 | R-DC | `show running-config \| include helper` | `ip helper-address 10.40.239.10` |
+| 5 | Balai Kota, DC, Pelabuhan → SRV-INTERNET | `ping 8.8.8.8` | Reply dari ketiga wilayah |
+| 5 | R-ISP | `show ip route` | Hanya `8.8.8.0/24` dan `203.0.113.20/30`, tanpa rute ke 10.x |
+| 5 | R-PUSAT | `show ip nat translations` / `show ip nat statistics` | Terjemahan ke 203.0.113.21 (entri ICMP hilang ±1 menit setelah ping; statistik menunjukkan hits) |
+| 6 | PEGAWAI-BALAIKOTA → KANTOR-PELABUHAN | `tracert 10.40.240.11` | 10.40.224.1 → **192.168.5.2** → 10.40.240.11 |
+| 6 | KANTOR-PELABUHAN → PEGAWAI-BALAIKOTA | `tracert 10.40.224.11` | 10.40.240.1 → **192.168.5.1** → 10.40.224.11 |
+| 7 | R-PUSAT, R-DC, NVR | lihat 4.5 | 5 neighbor FULL, rute O/O*E2, failover lewat L7 |
+| 8 | PEGAWAI-BALAIKOTA, KANTOR-PELABUHAN | `nslookup www/ftp/mail.k5.smartcity.lab` | Server 10.40.239.10 menjawab www → 10.40.241.10, ftp → 10.40.239.10, mail → 10.40.241.10 |
+| 8 | 7 wilayah → nama domain | `ping www/ftp/mail.k5.smartcity.lab` | Nama diterjemahkan dan server membalas dari semua wilayah |
+| 8 | PEGAWAI-BALAIKOTA, HP-WIFI-TIMUR, KANTOR-PELABUHAN | Web Browser `www.k5.smartcity.lab` | Halaman "Portal Smart City Surabaya – Kelompok 5" tampil |
+| 8 | NVR-CCTV-KOTA → SRV-DC | `ftp ftp.k5.smartcity.lab`, login `cctv`, `put rekaman-cctv.txt` | `230- Logged in`, `[Transfer complete - 30 bytes]` |
+| 8 | KANTOR-PELABUHAN → SRV-DC | `get rekaman-cctv.txt` | `[Transfer complete - 30 bytes]` |
+| 8 | pegawai@ → kantor@ (dan balasan) | Email Compose / Receive / Reply | `Send Success`, email diterima dua arah |
+
+### Screenshot
+
+**Soal 1 – Topologi lengkap** (backbone L1–L6, R-ISP, label LAN dan link)
+
+![Soal 1 - Topologi](images/01-topologi.png)
+
+**Soal 1 – Topologi dengan penanda LAN**: setiap lingkaran menandai satu LAN (satu subnet) beserta prefix-nya, supaya pembagian 14 subnet VLSM mudah dilihat.
+
+![Soal 1 - Topologi berlingkar](images/01-topologi-berlingkar.png)
+
+**Soal 3 & 5 – R-PUSAT:** `show ip nat translations` (10.40.224.11 diterjemahkan ke 203.0.113.21) dan `show ip route static` (13 static route + default ke R-ISP)
+
+![Soal 3 - Routing R-PUSAT](images/03-routing-rpusat.png)
+
+**Soal 3 & 5 – PEGAWAI-BALAIKOTA:** ping ke SENSOR-SCADA-PELABUHAN (10.40.160.11), SENSOR-PJU-SELATAN (10.40.240.139), dan SRV-INTERNET (8.8.8.8)
+
+![Soal 3 - Ping antar LAN](images/03-ping-antar-lan.png)
+
+**Soal 4 – NVR-CCTV-KOTA:** `ipconfig /renew` dan `ipconfig /all`, DHCP Servers 10.40.239.10 (SRV-DC lewat helper-address)
+
+![Soal 4 - DHCP CCTV](images/04-dhcp-cctv.png)
+
+**Soal 5 – R-ISP:** `show ip route` tanpa rute ke alamat privat 10.x
+
+![Soal 5 - R-ISP](images/05-risp-route.png)
+
+**Soal 6 & 8a – PEGAWAI-BALAIKOTA:** `tracert 10.40.240.11` lewat 192.168.5.2 (tunnel) dan `nslookup` www/ftp/mail
+
+![Soal 6 - GRE dan DNS](images/06-gre-dns.png)
+
+**Soal 7 – R-DC:** `show ip ospf neighbor` (FULL) dan `show ip route ospf` (O dan O*E2)
+
+![Soal 7 - Route OSPF](images/07-ospf-route.png)
+
+**Soal 7 – NVR-CCTV-KOTA:** tracert sebelum (via 10.40.241.33/L1), `ping -t` saat L1 diputus (1× RTO, TTL 125 → 124), tracert sesudah (via 10.40.241.58/L7)
+
+![Soal 7 - Failover](images/07-ospf-failover.png)
+
+**Soal 8b – Portal web** dari PEGAWAI-BALAIKOTA dengan nama domain
+
+![Soal 8 - Web](images/08-web.png)
+
+**Soal 8c – FTP** dari NVR-CCTV-KOTA: login `cctv`, `put rekaman-cctv.txt`
+
+![Soal 8 - FTP](images/08-ftp.png)
+
+**Soal 8d – Email** diterima KANTOR-PELABUHAN dari pegawai@k5.smartcity.lab
+
+![Soal 8 - Email](images/08-email.png)
