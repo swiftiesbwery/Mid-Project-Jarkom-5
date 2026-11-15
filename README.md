@@ -8,22 +8,14 @@
 | Danish Faeyza | 5027251028 |
 | Naoval James O. | 5027251092 |
 
-> Isi dan sesuaikan bagian bertanda `TODO`. Semua screenshot disimpan di folder `images/`.
-
-## Daftar Isi
-1. [Topologi dan Pemilihan Skema](#1-topologi-dan-pemilihan-skema)
-2. [Penjelasan Desain Topologi](#2-penjelasan-desain-topologi)
-3. [Tabel Subnetting](#3-tabel-subnetting)
-4. [Penjelasan Konfigurasi](#4-penjelasan-konfigurasi)
-5. [Bukti Pengujian](#5-bukti-pengujian)
-
 ---
 
 ## 1. Topologi dan Pemilihan Skema
 
-![Topologi](images/topologi.png)
+<img width="616" height="283" alt="image" src="https://github.com/user-attachments/assets/8f8560d4-b393-4b45-8088-578f39569db8" />
 
-**Skema yang dipilih: VLSM** `TODO: ganti jika memilih CIDR`
+
+**Skema yang dipilih: VLSM** 
 
 Alasan:
 - Ukuran LAN sangat bervariasi (20 sampai 11.000 host), sehingga VLSM menyesuaikan ukuran subnet dengan kebutuhan dan tidak membuang alamat.
