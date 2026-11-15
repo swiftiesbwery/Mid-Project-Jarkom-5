@@ -40,6 +40,8 @@ Backbone mengikuti Gambar 1 (L1-L6). Desain tiap lokasi:
 | Surabaya Timur | 2× 2960-24TT: `SW-WIFI-TIMUR`, `SW-SENSOR-BANJIR-TIMUR` | Router `R-TIMUR` (2911), `AP-WIFI-TIMUR`, `HP-WIFI-TIMUR` (smartphone, via WiFi), `SENSOR-BANJIR-TIMUR` (PC) | UTP straight-through Gi0/0 dan Gi0/1 ke switch, switch ke AP/PC; 1 kabel serial (L4); WiFi untuk HP | 1× HWIC-2T (Se0/0/0 terpakai, Se0/0/1 cadangan) | Hanya 1 link backbone (L4). LAN WiFi Publik /19 dan Sensor Banjir /22 memakai Gi bawaan. |
 | Surabaya Selatan | 2× 2960-24TT: `SW-WIFI-SELATAN`, `SW-PJU-SELATAN` | Router `R-SELATAN` (2911), `AP-WIFI-SELATAN`, `HP-WIFI-SELATAN` (smartphone, via WiFi), `SENSOR-PJU-SELATAN` (PC) | UTP straight-through Gi0/0 dan Gi0/1 ke switch, switch ke AP/PC; 1 kabel serial (L3); WiFi untuk HP | 1× HWIC-2T (Se0/0/0 terpakai, Se0/0/1 cadangan) | Hanya 1 link backbone (L3). LAN WiFi Publik /19 dan PJU Pintar /25 memakai Gi bawaan. |
 | Pelabuhan | 2× 2960-24TT: `SW-SCADA-PELABUHAN`, `SW-KANTOR-PELABUHAN` | Router `R-PELABUHAN` (2911), `SENSOR-SCADA-PELABUHAN` (PC), `KANTOR-PELABUHAN` (PC) | UTP straight-through Gi0/0 dan Gi0/1 ke switch, switch ke PC; 1 kabel serial (L6 ke `R-UTARA`) | 1× HWIC-2T (Se0/0/0 terpakai, Se0/0/1 cadangan) | Terhubung ke backbone lewat Utara (L6). LAN SCADA /19 dan Kantor /25 memakai Gi bawaan. Di file juga ada GRE tunnel (192.168.5.0/30) ke `R-PUSAT`. |
+
+
 Penamaan perangkat: `R-PUSAT`, `SW-BALAIKOTA`, `PC-CCTV-KOTA`, dst. Setiap LAN diberi label berisi nama subnet, Network ID/prefix, dan jumlah host.
 
 ## 3. Tabel Subnetting
